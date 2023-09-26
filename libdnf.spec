@@ -48,10 +48,18 @@
 %bcond_without zchunk
 %endif
 
+# Needs to match how gnupg2 is compiled
+%if 0%{?rhel} == 8
+%bcond_without run_gnupg_user_socket
+%else
+%bcond_with run_gnupg_user_socket
+%endif
+
 %bcond_with sanitizers
 
 %global _cmake_opts \\\
     -DENABLE_RHSM_SUPPORT=%{?with_rhsm:ON}%{!?with_rhsm:OFF} \\\
+    -DENABLE_RUN_GNUPG_USER_SOCKET=%{?with_run_gnupg_user_socket:ON}%{!?with_run_gnupg_user_socket:OFF} \\\
     %{nil}
 
 Name:           libdnf

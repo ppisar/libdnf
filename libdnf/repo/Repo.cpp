@@ -841,9 +841,9 @@ std::vector<Key> Repo::Impl::retrieve(const std::string & url)
 }
 
 /*
- * Creates the '/run/user/$UID' directory if it doesn't exist. If this
+ * Creates the '/run/gnupg/user/$UID' directory if it doesn't exist. If this
  * directory exists, gpgagent will create its sockets under
- * '/run/user/$UID/gnupg'.
+ * '/run/gnupg/user/$UID/gnupg'.
  *
  * If this directory doesn't exist, gpgagent will create its sockets in gpg
  * home directory, which is under '/var/cache/yum/metadata/' and this was
@@ -853,6 +853,11 @@ std::vector<Key> Repo::Impl::retrieve(const std::string & url)
  * would cause a race condition with calling gpgme_release(), see [2], [3],
  * [4].
  *
+ * Another previous solution used /run/user/$UID which showed problematic when
+ * this library was used out of an systemd-logind session. Then /run/user/$UID,
+ * normally maintained by systemd, was assigned a SELinux label unexpected by
+ * systemd causing errors on a user logout [5].
+ *
  * Since the agent doesn't clean up its sockets properly, by creating this
  * directory we make sure they are in a place that is not causing trouble with
  * container images.
@@ -861,14 +866,26 @@ std::vector<Key> Repo::Impl::retrieve(const std::string & url)
  * [2] https://bugzilla.redhat.com/show_bug.cgi?id=1769831
  * [3] https://github.com/rpm-software-management/microdnf/issues/50
  * [4] https://bugzilla.redhat.com/show_bug.cgi?id=1781601
+ * [5] https://issues.redhat.com/browse/RHEL-642
  */
 static void ensure_socket_dir_exists() {
     auto logger(Log::getLogger());
-    std::string dirname = "/run/user/" + std::to_string(getuid());
-    int res = mkdir(dirname.c_str(), 0700);
-    if (res != 0 && errno != EEXIST) {
-        logger->debug(tfm::format("Failed to create directory \"%s\": %d - %s",
-                                  dirname, errno, strerror(errno)));
+#if ENABLE_RUN_GNUPG_USER_SOCKET
+    std::string dirnames[] = { "/run/gnupg", "/run/gnupg/user",
+                               "/run/gnupg/user/" + std::to_string(getuid()) };
+    const mode_t modes[] = { 0755, 0755, 0700 };
+#else
+    std::string dirnames[] = { "/run/user/" + std::to_string(getuid()) };
+    const mode_t modes[] = { 0700 };
+#endif
+
+    for (size_t i = 0; i < sizeof(dirnames)/sizeof(dirnames[0]); i++) {
+        int res = mkdir(dirnames[i].c_str(), modes[i]);
+        if (res != 0 && errno != EEXIST) {
+            logger->debug(tfm::format("Failed to create directory \"%s\": %d - %s",
+                                      dirnames[i], errno, strerror(errno)));
+            return;
+        }
     }
 }
 

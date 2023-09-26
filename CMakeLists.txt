@@ -34,6 +34,7 @@ option(WITH_MAN "Enables hawkey man page generation" ON)
 option(WITH_ZCHUNK "Build with zchunk support" ON)
 option(ENABLE_RHSM_SUPPORT "Build with Red Hat Subscription Manager support?" OFF)
 option(ENABLE_SOLV_URPMREORDER "Build with support for URPM-like solution reordering?" OFF)
+option(ENABLE_RUN_GNUPG_USER_SOCKET "Create a directory for gpg-agent socket in /run/gnugp/user (instead of /run/user)" OFF)
 
 
 # build options - debugging
@@ -145,6 +146,11 @@ endif()
 # libsolv
 if(ENABLE_SOLV_URPMREORDER)
     add_definitions(-DLIBSOLV_FLAG_URPMREORDER=1)
+endif()
+
+if(ENABLE_RUN_GNUPG_USER_SOCKET)
+    set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DENABLE_RUN_GNUPG_USER_SOCKET=1")
+    set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG} -DENABLE_RUN_GNUPG_USER_SOCKET=1")
 endif()
 
 

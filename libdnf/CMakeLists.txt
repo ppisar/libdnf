@@ -78,6 +78,7 @@ target_link_libraries(libdnf
     ${OPENSSL_CRYPTO_LIBRARY}
     ${RPM_LIBRARIES}
     ${SCOLS_LIBRARIES}
+    ${SELINUX_LIBRARIES}
     ${SQLite3_LIBRARIES}
     ${JSONC_LIBRARIES}
     ${LIBMODULEMD_LIBRARIES}
